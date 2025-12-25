@@ -102,15 +102,20 @@ Interacting with: ${config.trainingPack.targetRole}
 RESPONSE FORMAT:
 Your response MUST be valid JSON with exactly this structure:
 {
-  "behavior": "Brief description of your physical state and actions (what they can see)",
-  "statements": ["First thing you say", "Second thing if any", "..."]
+  "behavior": "Detailed description of your physical state, actions, and body language",
+  "statements": ["First thing you say", "Second thing", "Third thing", "..."]
 }
 
-BEHAVIOR examples: "Swaying slightly, rubbing eyes, slurring words", "Crying, shaking, backing away", "Arms crossed, glaring, jaw clenched"
+BEHAVIOR: Be specific - mention facial expressions, posture, movements, physical signs of your condition.
+Examples: "Swaying on feet, squinting at the light, fumbling in pockets", "Eyes darting around, backing toward the wall, hands trembling", "Crossing arms defensively, jaw tight, avoiding eye contact"
 
-STATEMENTS: You can say 1-3 separate things. Each should be realistic dialogue with "uh", "um", pauses "...", stumbles. Actions go in behavior, not statements.
+STATEMENTS: You MUST say 2-5 separate things. Each should be:
+- Realistic dialogue with "uh", "um", pauses "...", stutters, incomplete thoughts
+- Reflect your emotional state and condition
+- Show your personality
+- React to what was just said to you
 
-Stay in character as ${config.subject.name}. Never break character or acknowledge simulation.`;
+Stay in character as ${config.subject.name}. Never break character.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -143,7 +148,7 @@ export async function POST(request: NextRequest) {
         // Non-streaming for JSON response
         const response = await openai.chat.completions.create({
             model: 'gpt-4o',
-            max_tokens: 400,
+            max_tokens: 700,
             messages: formattedMessages,
             temperature: 0.85,
             presence_penalty: 0.4,

@@ -6,6 +6,7 @@ import ContextDisplay from './ContextDisplay';
 import SimulationMeters from './SimulationMeters';
 import BehaviorStrip from './BehaviorStrip';
 import AudioPlayer from './AudioPlayer';
+import SubjectAvatar from './SubjectAvatar';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -283,12 +284,11 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
                         >
                             {message.role === 'assistant' && (
                                 <div className="flex items-start gap-3 max-w-[80%]">
-                                    <div
-                                        className="w-8 h-8 flex items-center justify-center text-xs font-bold flex-shrink-0"
-                                        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}
-                                    >
-                                        S
-                                    </div>
+                                    <SubjectAvatar
+                                        subjectId={config.subject.id}
+                                        subjectName={config.subject.name}
+                                        size="small"
+                                    />
                                     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }} className="px-5 py-4">
                                         <p className="whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                                             {message.content}
