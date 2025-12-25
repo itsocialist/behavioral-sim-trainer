@@ -16,6 +16,38 @@ interface SimulationChatProps {
     onEndSession: (messages: Message[], scenarioContext: string, intoxicationLevel: string) => void;
 }
 
+// Analyze officer tone based on message content
+function analyzeOfficerTone(message: string): number {
+    const lower = message.toLowerCase();
+    let tone = 5; // Start neutral
+
+    // Aggressive indicators (+)
+    if (lower.includes('now')) tone += 1;
+    if (lower.includes('immediately')) tone += 2;
+    if (lower.includes('comply')) tone += 2;
+    if (lower.includes('arrest')) tone += 2;
+    if (lower.includes('demand')) tone += 2;
+    if (lower.includes('stop')) tone += 1;
+    if (lower.includes('hands up') || lower.includes('hands on')) tone += 2;
+    if (lower.includes('don\'t move')) tone += 1;
+    if (message === message.toUpperCase() && message.length > 10) tone += 2; // All caps = yelling
+
+    // Calm/empathetic indicators (-)
+    if (lower.includes('help')) tone -= 1;
+    if (lower.includes('okay') || lower.includes('ok')) tone -= 1;
+    if (lower.includes('understand')) tone -= 1;
+    if (lower.includes('calm')) tone -= 1;
+    if (lower.includes('safe')) tone -= 1;
+    if (lower.includes('please')) tone -= 1;
+    if (lower.includes('just want to')) tone -= 1;
+    if (lower.includes('take your time')) tone -= 2;
+    if (lower.includes('it\'s okay') || lower.includes('it\'s alright')) tone -= 2;
+    if (lower.includes('no rush')) tone -= 1;
+    if (lower.includes('?')) tone -= 0.5; // Questions are less aggressive
+
+    return Math.max(1, Math.min(10, Math.round(tone)));
+}
+
 export default function SimulationChat({ config, onEndSession }: SimulationChatProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -24,6 +56,7 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
     const [sessionTime, setSessionTime] = useState(0);
     const [distance, setDistance] = useState(config.scenarioPack.initialDistance);
     const [temperature, setTemperature] = useState(config.scenarioPack.initialTemperature);
+    const [officerTone, setOfficerTone] = useState(5); // Start neutral
     const [sessionId] = useState(`session-${Date.now()}`);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -45,8 +78,8 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
     const handleMoveCloser = () => {
         if (distance > 1) {
             setDistance(d => d - 1);
-            // Moving closer may increase tension
-            if (temperature < 10 && Math.random() > 0.5) {
+            // Moving closer may increase tension if already agitated
+            if (temperature >= 6 && Math.random() > 0.3) {
                 setTemperature(t => Math.min(10, t + 1));
             }
         }
@@ -55,15 +88,19 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
     const handleStepBack = () => {
         if (distance < 10) {
             setDistance(d => d + 1);
-            // Stepping back may decrease tension
+            // Stepping back may help calm situation
             if (temperature > 1 && Math.random() > 0.5) {
-                setTemperature(t => Math.max(1, t - 1));
+                setTemperature(t => Math.max(1, t - 0.5));
             }
         }
     };
 
     const sendMessage = async () => {
         if (!input.trim() || isLoading) return;
+
+        // Analyze officer tone from the message
+        const messageTone = analyzeOfficerTone(input.trim());
+        setOfficerTone(messageTone);
 
         const userMessage: Message = {
             role: 'user',
@@ -113,11 +150,18 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
                         try {
                             const data = JSON.parse(line);
 
-                            if (data.type === 'content') {
+                            if (data.type === 'meta') {
+                                // Apply AI-analyzed temperature change
+                                if (data.temperatureChange) {
+                                    setTemperature(t => Math.max(1, Math.min(10, t + data.temperatureChange)));
+                                }
+                                // Apply AI-analyzed distance change (subject moving)
+                                if (data.distanceChange) {
+                                    setDistance(d => Math.max(1, Math.min(10, d + data.distanceChange)));
+                                }
+                            } else if (data.type === 'content') {
                                 fullContent += data.content;
                                 setStreamingContent(fullContent);
-                            } else if (data.type === 'meta' && data.temperatureChange) {
-                                setTemperature(t => Math.max(1, Math.min(10, t + data.temperatureChange)));
                             } else if (data.type === 'done') {
                                 const assistantMessage: Message = {
                                     role: 'assistant',
@@ -154,12 +198,13 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
 
             {/* Header with meters */}
             <div
-                className="border-b px-6 py-3 flex justify-between items-center"
+                className="border-b px-6 py-2 flex justify-between items-center"
                 style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}
             >
                 <SimulationMeters
                     distance={distance}
                     temperature={temperature}
+                    officerTone={officerTone}
                     onMoveCloser={handleMoveCloser}
                     onStepBack={handleStepBack}
                 />
