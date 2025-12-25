@@ -1,6 +1,7 @@
 'use client';
 
 import { type SimulationConfig } from './PackSelector';
+import SubjectAvatar from './SubjectAvatar';
 
 interface BehaviorStripProps {
     config: SimulationConfig;
@@ -13,29 +14,26 @@ export default function BehaviorStrip({ config, behaviorDescription, isLoading }
 
     return (
         <div
-            className="px-5 py-3 flex items-center gap-3"
+            className="px-5 py-3 flex items-center gap-4"
             style={{
                 background: 'var(--bg-card)',
                 borderBottom: '1px solid var(--border-color)',
             }}
         >
-            <div
-                className="w-6 h-6 flex items-center justify-center text-xs"
-                style={{
-                    background: isLoading ? 'var(--accent-primary)' : 'var(--bg-input)',
-                    color: isLoading ? '#000' : 'var(--text-muted)',
-                    transition: 'all 0.3s ease',
-                }}
-            >
-                👤
-            </div>
+            {/* Subject Avatar */}
+            <SubjectAvatar
+                subjectId={config.subject.id}
+                subjectName={config.subject.name}
+                size="small"
+            />
+
             <div className="flex-1">
                 <span className="text-xs uppercase tracking-wider mr-2" style={{ color: 'var(--text-muted)' }}>
-                    SUBJECT:
+                    {config.subject.name}:
                 </span>
                 <span
-                    className="text-sm italic"
-                    style={{ color: 'var(--text-secondary)' }}
+                    className={`text-sm italic ${isLoading ? 'animate-pulse' : ''}`}
+                    style={{ color: isLoading ? 'var(--accent-primary)' : 'var(--text-secondary)' }}
                 >
                     {behaviorDescription || defaultBehavior}
                 </span>
