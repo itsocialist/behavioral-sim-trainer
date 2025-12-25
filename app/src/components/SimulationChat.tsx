@@ -5,6 +5,7 @@ import { type SimulationConfig } from './PackSelector';
 import ContextDisplay from './ContextDisplay';
 import SimulationMeters from './SimulationMeters';
 import BehaviorStrip from './BehaviorStrip';
+import AudioPlayer from './AudioPlayer';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -292,6 +293,13 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
                                         <p className="whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                                             {message.content}
                                         </p>
+                                        <div className="mt-2 flex justify-end">
+                                            <AudioPlayer
+                                                text={message.content}
+                                                subjectName={config.subject.name}
+                                                subjectAge={config.subject.age}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}
