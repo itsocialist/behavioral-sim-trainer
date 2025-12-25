@@ -14,36 +14,43 @@ interface DebriefRequest {
     messages: Message[];
     scenarioContext: string;
     intoxicationLevel: string;
+    traineeRole?: string; // e.g., "Police Officer", "Teacher/Administrator", "Social Worker"
+    subjectCondition?: string; // e.g., "Alcohol Intoxication", "Acute Emotional Episode"
 }
 
-const DEBRIEF_PROMPT = `You are an expert law enforcement trainer analyzing a training simulation conversation. 
+function buildDebriefPrompt(traineeRole: string, subjectCondition: string): string {
+    const roleLabel = traineeRole || 'officer';
+    const conditionLabel = subjectCondition || 'an individual in distress';
 
-The trainee (playing as an officer) just completed a scenario involving an intoxicated individual.
+    return `You are an expert trainer analyzing a behavioral simulation conversation.
+
+The trainee (acting as a ${roleLabel}) just completed a scenario involving ${conditionLabel}.
 
 Analyze their performance and provide:
 
-1. **RECOGNITION SCORE (1-10)**: How well did they identify impairment indicators?
-   - Look for: Did they notice slurred speech, confusion, inconsistencies, emotional volatility?
+1. **RECOGNITION SCORE (1-10)**: How well did they identify indicators of the subject's condition?
+   - Did they notice emotional cues, distress signals, behavioral patterns?
 
 2. **COMMUNICATION SCORE (1-10)**: How effective was their communication approach?
-   - Look for: Clear instructions, patience, appropriate tone, de-escalation language
+   - Clear guidance, patience, appropriate tone, de-escalation language, empathy
 
-3. **SAFETY AWARENESS SCORE (1-10)**: Did they demonstrate appropriate safety practices?
-   - Look for: Distance management, situational awareness, considering backup/medical needs
+3. **SAFETY AWARENESS SCORE (1-10)**: Did they demonstrate appropriate practices?
+   - Distance management, situational awareness, considering when to get help
 
 4. **KEY OBSERVATIONS**: 
-   - What did they do well? (2-3 specific examples from the conversation)
+   - What did the ${roleLabel} do well? (2-3 specific examples)
    - What could they improve? (2-3 specific recommendations)
 
-5. **IMPAIRMENT INDICATORS DETECTED**:
-   List which signs of impairment were present in the subject's responses that the officer should have noticed.
+5. **INDICATORS DETECTED**:
+   List which signs of the subject's condition were present that the ${roleLabel} should have noticed.
 
 6. **OVERALL ASSESSMENT**:
    A brief 2-3 sentence summary of their performance.
 
-Be specific. Reference actual dialogue from the conversation. Be constructive, not harsh.
+Be specific. Reference actual dialogue. Be constructive, not harsh.
+Always refer to the trainee as "${roleLabel}" (never "officer" unless that's their role).
 
-Format your response as JSON with this structure:
+Format your response as JSON:
 {
   "recognitionScore": number,
   "communicationScore": number,
@@ -55,10 +62,17 @@ Format your response as JSON with this structure:
   "indicatorsMissed": ["string", "string"],
   "summary": "string"
 }`;
+}
 
 export async function POST(request: NextRequest) {
     try {
-        const { messages, scenarioContext, intoxicationLevel }: DebriefRequest = await request.json();
+        const {
+            messages,
+            scenarioContext,
+            intoxicationLevel,
+            traineeRole = 'officer',
+            subjectCondition = 'distress'
+        }: DebriefRequest = await request.json();
 
         if (!messages || messages.length < 2) {
             return NextResponse.json(
@@ -67,16 +81,19 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Build conversation transcript for analysis
+        // Build conversation transcript with role-appropriate labels
+        const traineeLabel = traineeRole.toUpperCase().replace(/\//g, '-');
         const transcript = messages
-            .map(m => `${m.role === 'user' ? 'OFFICER' : 'SUBJECT'}: ${m.content}`)
+            .map(m => `${m.role === 'user' ? traineeLabel : 'SUBJECT'}: ${m.content}`)
             .join('\n\n');
 
-        const analysisPrompt = `${DEBRIEF_PROMPT}
+        const debriefPrompt = buildDebriefPrompt(traineeRole, subjectCondition);
+
+        const analysisPrompt = `${debriefPrompt}
 
 SCENARIO CONTEXT:
 ${scenarioContext}
-Intoxication Level: ${intoxicationLevel}
+Subject Condition Level: ${intoxicationLevel}
 
 CONVERSATION TRANSCRIPT:
 ${transcript}
@@ -87,10 +104,10 @@ Provide your analysis as valid JSON only, no markdown formatting.`;
             model: 'gpt-4o',
             max_tokens: 1000,
             messages: [
-                { role: 'system', content: 'You are a law enforcement training analyst. Respond only with valid JSON.' },
+                { role: 'system', content: `You are a training analyst for ${traineeRole}s. Respond only with valid JSON.` },
                 { role: 'user', content: analysisPrompt },
             ],
-            temperature: 0.3, // Lower for more consistent analysis
+            temperature: 0.3,
             response_format: { type: 'json_object' },
         });
 
@@ -99,7 +116,6 @@ Provide your analysis as valid JSON only, no markdown formatting.`;
         try {
             const analysis = JSON.parse(analysisText);
 
-            // Calculate overall score if not provided
             if (!analysis.overallScore) {
                 analysis.overallScore = Math.round(
                     (analysis.recognitionScore + analysis.communicationScore + analysis.safetyScore) / 3

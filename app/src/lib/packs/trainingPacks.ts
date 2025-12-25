@@ -16,14 +16,14 @@ export interface ScenarioPack {
     name: string;
     description: string;
     context: string;
-    initialDistance: number; // 1-10 scale, 10 = far
-    initialTemperature: number; // 1-10 scale, 10 = very agitated
+    initialDistance: number;
+    initialTemperature: number;
 }
 
 export interface SubjectPack {
     id: string;
     name: string;
-    condition: string; // e.g., "Alcohol Intoxication", "Mental Health Crisis"
+    condition: string;
     conditionLevel: 'mild' | 'moderate' | 'severe';
     subjects: SubjectProfile[];
     behaviorPrompt: string;
@@ -34,13 +34,14 @@ export interface TrainingPack {
     name: string;
     icon: string;
     description: string;
-    targetRole: string; // Who is being trained
+    targetRole: string;
     subjectPacks: SubjectPack[];
     scenarioPacks: ScenarioPack[];
 }
 
 // ============================================
 // LAW ENFORCEMENT TRAINING PACK
+// Names: deliberate diversity across all conditions
 // ============================================
 
 const lawEnforcementSubjects: SubjectPack[] = [
@@ -56,7 +57,7 @@ Physical: Unsteady, needs support, slow reactions`,
         subjects: [
             {
                 id: 'le-alc-1',
-                name: 'Jake Thompson',
+                name: 'Kevin O\'Brien',
                 age: '38',
                 occupation: 'Construction worker',
                 backstory: 'Divorced, drinks to cope. Was at a bar watching the game.',
@@ -65,12 +66,12 @@ Physical: Unsteady, needs support, slow reactions`,
             },
             {
                 id: 'le-alc-2',
-                name: 'Marcus Williams',
+                name: 'Darnell Washington',
                 age: '29',
-                occupation: 'Warehouse worker',
-                backstory: 'Long shift, coworkers convinced him to go out.',
+                occupation: 'Warehouse supervisor',
+                backstory: 'Long shift, coworkers convinced him to celebrate a promotion.',
                 personalityTraits: ['overly-friendly', 'apologetic'],
-                physicalDescription: 'Tired looking, polo shirt, jeans',
+                physicalDescription: 'Polo shirt, jeans, tired but well-kept',
             },
         ],
     },
@@ -86,12 +87,21 @@ Physical: Pacing, can't stay still, startles easily`,
         subjects: [
             {
                 id: 'le-mh-1',
-                name: 'David Chen',
+                name: 'Michael Sullivan',
                 age: '34',
                 occupation: 'IT professional',
                 backstory: 'Off medication for a week, hasn\'t slept in days.',
                 personalityTraits: ['paranoid', 'talks fast'],
                 physicalDescription: 'Disheveled, wrinkled clothes, darting eyes',
+            },
+            {
+                id: 'le-mh-2',
+                name: 'Andre Williams',
+                age: '28',
+                occupation: 'Graduate student',
+                backstory: 'Exam pressure combined with undiagnosed anxiety.',
+                personalityTraits: ['scared', 'overwhelmed'],
+                physicalDescription: 'Backpack, casual clothes, shaking hands',
             },
         ],
     },
@@ -141,12 +151,21 @@ Physical: Signs of use, poor hygiene, may be seeking resources`,
         subjects: [
             {
                 id: 'sw-sub-1',
-                name: 'Michelle Torres',
+                name: 'Sarah Mitchell',
                 age: '32',
                 occupation: 'Unemployed',
                 backstory: 'Single mother, kids are with grandparents. Trying to get clean.',
                 personalityTraits: ['defensive', 'ashamed', 'wants help'],
                 physicalDescription: 'Thin, nervous movements, picks at skin',
+            },
+            {
+                id: 'sw-sub-2',
+                name: 'James Chen',
+                age: '41',
+                occupation: 'Former accountant',
+                backstory: 'Lost license after DUI, spiraled from there.',
+                personalityTraits: ['articulate', 'in denial', 'frustrated'],
+                physicalDescription: 'Rumpled suit, still trying to maintain appearance',
             },
         ],
     },
@@ -162,12 +181,21 @@ Physical: Tired, may have belongings with them`,
         subjects: [
             {
                 id: 'sw-hs-1',
-                name: 'Robert James',
+                name: 'Maria Santos',
                 age: '45',
-                occupation: 'Former retail manager',
-                backstory: 'Lost job, then apartment. Been couch surfing for weeks.',
+                occupation: 'Former hotel housekeeper',
+                backstory: 'Lost job during layoffs, then apartment. Been couch surfing for weeks.',
                 personalityTraits: ['embarrassed', 'proud', 'frustrated'],
-                physicalDescription: 'Worn clothes, backpack, tired eyes',
+                physicalDescription: 'Worn but clean clothes, small bag, tired eyes',
+            },
+            {
+                id: 'sw-hs-2',
+                name: 'Robert Taylor',
+                age: '52',
+                occupation: 'Disabled veteran',
+                backstory: 'Fixed income couldn\'t keep up with rent increases.',
+                personalityTraits: ['stoic', 'doesn\'t want charity', 'practical'],
+                physicalDescription: 'Military jacket, organized belongings, proud bearing',
             },
         ],
     },
@@ -209,12 +237,21 @@ Physical: Crossed arms, avoiding eye contact, may throw things`,
         subjects: [
             {
                 id: 'tc-bh-1',
-                name: 'Tyler',
+                name: 'Marcus',
                 age: '14',
                 occupation: 'Student',
                 backstory: 'Parents going through divorce. Acting out at school.',
                 personalityTraits: ['defiant', 'actually vulnerable', 'seeks attention'],
                 physicalDescription: 'Headphones around neck, hoodie up, slouching',
+            },
+            {
+                id: 'tc-bh-2',
+                name: 'Dylan',
+                age: '15',
+                occupation: 'Student',
+                backstory: 'New to school, trying to establish reputation.',
+                personalityTraits: ['insecure', 'loud', 'testing boundaries'],
+                physicalDescription: 'Basketball jersey, expensive sneakers, restless',
             },
         ],
     },
@@ -230,12 +267,21 @@ Physical: Crying, shaking, may hide face`,
         subjects: [
             {
                 id: 'tc-em-1',
-                name: 'Emma',
+                name: 'Jasmine',
                 age: '16',
                 occupation: 'Student',
                 backstory: 'Bullying situation, feels isolated. Having a breakdown.',
                 personalityTraits: ['anxious', 'wants to be liked', 'withdrawing'],
                 physicalDescription: 'Head down, tears, hugging herself',
+            },
+            {
+                id: 'tc-em-2',
+                name: 'Alex',
+                age: '13',
+                occupation: 'Student',
+                backstory: 'Struggling with identity, doesn\'t feel understood at home.',
+                personalityTraits: ['sensitive', 'creative', 'overwhelmed'],
+                physicalDescription: 'Art supplies scattered, quiet, avoiding eye contact',
             },
         ],
     },
@@ -294,7 +340,6 @@ export const TRAINING_PACKS: TrainingPack[] = [
     },
 ];
 
-// Helper functions
 export function getTrainingPack(packId: string): TrainingPack | undefined {
     return TRAINING_PACKS.find(p => p.id === packId);
 }

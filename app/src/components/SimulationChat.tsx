@@ -21,16 +21,36 @@ function analyzeOfficerTone(message: string): number {
     const lower = message.toLowerCase();
     let tone = 5; // Start neutral
 
-    // Aggressive indicators (+)
+    // STRONG AGGRESSIVE INDICATORS - yelling, screaming (+3 to +4)
+    if (lower.includes('*yells*') || lower.includes('**yells**')) tone += 4;
+    if (lower.includes('*screams*') || lower.includes('**screams**')) tone += 4;
+    if (lower.includes('*shouts*') || lower.includes('**shouts**')) tone += 4;
+    if (lower.includes('*slams*')) tone += 3;
+    if (lower.includes('*grabs*')) tone += 3;
+
+    // All caps detection (more than 5 chars = yelling)
+    const capsWords = message.match(/\b[A-Z]{3,}\b/g);
+    if (capsWords && capsWords.length > 0) tone += capsWords.length * 1.5;
+
+    // Multiple exclamation marks = aggressive
+    const exclamationCount = (message.match(/!/g) || []).length;
+    if (exclamationCount >= 2) tone += 2;
+    else if (exclamationCount === 1) tone += 1;
+
+    // Aggressive words/phrases (+1 to +2)
     if (lower.includes('now')) tone += 1;
     if (lower.includes('immediately')) tone += 2;
     if (lower.includes('comply')) tone += 2;
     if (lower.includes('arrest')) tone += 2;
     if (lower.includes('demand')) tone += 2;
     if (lower.includes('stop')) tone += 1;
+    if (lower.includes('shut up')) tone += 3;
     if (lower.includes('hands up') || lower.includes('hands on')) tone += 2;
     if (lower.includes('don\'t move')) tone += 1;
-    if (message === message.toUpperCase() && message.length > 10) tone += 2; // All caps = yelling
+    if (lower.includes('get down')) tone += 2;
+    if (lower.includes('back off')) tone += 1;
+    if (lower.includes('what are you doing')) tone += 1;
+    if (lower.includes('hey you')) tone += 1;
 
     // Calm/empathetic indicators (-)
     if (lower.includes('help')) tone -= 1;
@@ -43,7 +63,12 @@ function analyzeOfficerTone(message: string): number {
     if (lower.includes('take your time')) tone -= 2;
     if (lower.includes('it\'s okay') || lower.includes('it\'s alright')) tone -= 2;
     if (lower.includes('no rush')) tone -= 1;
-    if (lower.includes('?')) tone -= 0.5; // Questions are less aggressive
+    if (lower.includes('i\'m here to help')) tone -= 2;
+    if (lower.includes('talk to me')) tone -= 1;
+    if (lower.includes('what\'s wrong')) tone -= 1;
+
+    // Single question mark without aggressive words = softer
+    if (message.includes('?') && exclamationCount === 0 && tone <= 5) tone -= 0.5;
 
     return Math.max(1, Math.min(10, Math.round(tone)));
 }
