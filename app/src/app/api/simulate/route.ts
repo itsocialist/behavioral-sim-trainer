@@ -30,43 +30,30 @@ interface SimulateConfig {
     temperature: number;
 }
 
-// Analyze sentiment and calculate agitation change
 async function analyzeSentimentAndAgitation(
     messages: { role: string; content: string }[],
     currentDistance: number,
     currentTemperature: number
 ): Promise<{ temperatureChange: number; distanceChange: number; reason: string }> {
-    const recentMessages = messages.slice(-6); // Last 3 exchanges
+    const recentMessages = messages.slice(-6);
     const transcript = recentMessages
-        .map(m => `${m.role === 'user' ? 'OFFICER' : 'SUBJECT'}: ${m.content}`)
+        .map(m => `${m.role === 'user' ? 'TRAINEE' : 'SUBJECT'}: ${m.content}`)
         .join('\n');
 
-    const analysisPrompt = `Analyze this interaction and determine:
-1. How the subject's agitation level should change (-2 to +2)
-2. Whether the subject would move closer or further (-1, 0, or +1)
+    const analysisPrompt = `Analyze this interaction:
+1. How should the subject's agitation change? (-2 to +2)
+2. Should the subject move closer or further? (-1, 0, +1)
 
-Consider:
-- Officer's tone: commanding vs calm, aggressive vs empathetic
-- Distance: currently ${currentDistance}/10 (1=very close, 10=far)
-- Current agitation: ${currentTemperature}/10
+Distance: ${currentDistance}/10, Agitation: ${currentTemperature}/10
 
-Recent interaction:
 ${transcript}
 
-Respond with ONLY valid JSON:
-{"temperatureChange": number, "distanceChange": number, "reason": "brief explanation"}
-
-Rules:
-- Aggressive commands (+1 to +2 temperature, subject may back away +1)
-- Calm, empathetic approach (-1 to -2 temperature, subject may approach -1)
-- Threatening to get physical (+2, subject backs away)
-- Offering help (-1 temperature, possible approach)
-- If agitated subject feels cornered (distance ≤2 and temp ≥7), they may try to create distance`;
+JSON only: {"temperatureChange": number, "distanceChange": number, "reason": "brief"}`;
 
     try {
         const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini', // Faster for analysis
-            max_tokens: 100,
+            model: 'gpt-4o-mini',
+            max_tokens: 80,
             messages: [{ role: 'user', content: analysisPrompt }],
             temperature: 0.3,
             response_format: { type: 'json_object' },
@@ -84,54 +71,46 @@ Rules:
 }
 
 function buildSystemPrompt(config: SimulateConfig): string {
-    const distanceContext = config.distance <= 2 ? 'The person is very close to you - uncomfortably so. You feel cornered.' :
+    const distanceContext = config.distance <= 2 ? 'The person is very close - you feel cornered.' :
         config.distance <= 4 ? 'The person is at normal talking distance.' :
-            config.distance <= 7 ? 'The person is keeping a reasonable distance - that helps.' :
-                'The person is far away, which makes you feel safer.';
+            config.distance <= 7 ? 'The person is keeping reasonable distance.' :
+                'The person is far away, which helps.';
 
-    const temperatureContext = config.temperature >= 8 ? 'You are extremely agitated. Your voice is raised, you might be yelling or crying.' :
-        config.temperature >= 6 ? 'You are noticeably tense and defensive. Snapping at them.' :
-            config.temperature >= 4 ? 'You are uneasy and wary, but holding it together.' :
-                'You are relatively calm given the situation.';
+    const temperatureContext = config.temperature >= 8 ? 'You are extremely agitated. Voice raised, possibly yelling or crying.' :
+        config.temperature >= 6 ? 'You are noticeably tense and defensive.' :
+            config.temperature >= 4 ? 'You are uneasy and wary.' :
+                'You are relatively calm.';
 
-    const movementInstruction = config.temperature >= 7 && config.distance <= 3
-        ? 'You feel trapped and may try to create space. Mention wanting to step back or feeling crowded.'
-        : config.temperature <= 3 && config.distance >= 5
-            ? 'You might move a bit closer as you feel more comfortable.'
-            : '';
-
-    return `You ARE ${config.subject.name}. You are ${config.subject.age} years old.
+    return `You ARE ${config.subject.name}, ${config.subject.age} years old.
 
 WHO YOU ARE:
 - Occupation: ${config.subject.occupation}
 - Background: ${config.subject.backstory}
 - Personality: ${config.subject.personalityTraits.join(', ')}
-- Appearance: ${config.subject.physicalDescription}
 
 YOUR CONDITION:
 ${config.subjectPack.condition} (${config.subjectPack.conditionLevel})
 ${config.subjectPack.behaviorPrompt}
 
-THE SITUATION:
+SITUATION:
 ${config.scenarioPack.context}
 ${distanceContext}
 ${temperatureContext}
-${movementInstruction}
 
-You are interacting with a ${config.trainingPack.targetRole}.
+Interacting with: ${config.trainingPack.targetRole}
 
-MOVEMENT: If you feel threatened or cornered, you can indicate movement with *takes a step back* or *backs away*. If you're calming down, you might *relaxes slightly* or *sits back down*.
+RESPONSE FORMAT:
+Your response MUST be valid JSON with exactly this structure:
+{
+  "behavior": "Brief description of your physical state and actions (what they can see)",
+  "statements": ["First thing you say", "Second thing if any", "..."]
+}
 
-RESPONSE GUIDELINES:
-- Stay completely in character as ${config.subject.name}
-- Your responses should reflect your condition and current emotional state
-- Use realistic speech patterns with "uh", "um", pauses ("..."), verbal stumbles
-- React to the ${config.trainingPack.targetRole}'s tone - aggressive approach makes you worse
-- Use *asterisks* for physical actions including movement
-- Responses should be 1-4 sentences
-- Never acknowledge this is a simulation
+BEHAVIOR examples: "Swaying slightly, rubbing eyes, slurring words", "Crying, shaking, backing away", "Arms crossed, glaring, jaw clenched"
 
-CRITICAL: You ARE this person. Never break character.`;
+STATEMENTS: You can say 1-3 separate things. Each should be realistic dialogue with "uh", "um", pauses "...", stumbles. Actions go in behavior, not statements.
+
+Stay in character as ${config.subject.name}. Never break character or acknowledge simulation.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -142,7 +121,6 @@ export async function POST(request: NextRequest) {
             config: SimulateConfig;
         };
 
-        // Analyze sentiment and calculate changes BEFORE generating response
         let sentimentAnalysis = { temperatureChange: 0, distanceChange: 0, reason: '' };
         if (messages.length >= 2) {
             sentimentAnalysis = await analyzeSentimentAndAgitation(
@@ -162,35 +140,61 @@ export async function POST(request: NextRequest) {
             })),
         ];
 
-        const stream = await openai.chat.completions.create({
+        // Non-streaming for JSON response
+        const response = await openai.chat.completions.create({
             model: 'gpt-4o',
-            max_tokens: 500,
+            max_tokens: 400,
             messages: formattedMessages,
             temperature: 0.85,
             presence_penalty: 0.4,
             frequency_penalty: 0.5,
-            top_p: 0.95,
-            stream: true,
+            response_format: { type: 'json_object' },
         });
 
+        const responseText = response.choices[0]?.message?.content || '{}';
+        let parsed: { behavior?: string; statements?: string[] };
+
+        try {
+            parsed = JSON.parse(responseText);
+        } catch {
+            // Fallback if JSON parsing fails
+            parsed = { behavior: 'Looking uncertain', statements: [responseText] };
+        }
+
+        const behavior = parsed.behavior || 'No visible change';
+        const statements = parsed.statements || ['...'];
+
+        // Stream the response
         const encoder = new TextEncoder();
         const readable = new ReadableStream({
             async start(controller) {
-                // Send metadata with AI-analyzed changes
+                // Send metadata
                 controller.enqueue(encoder.encode(JSON.stringify({
                     type: 'meta',
                     sessionId,
                     temperatureChange: sentimentAnalysis.temperatureChange,
                     distanceChange: sentimentAnalysis.distanceChange,
-                    analysisReason: sentimentAnalysis.reason,
+                    behavior,
                 }) + '\n'));
 
-                for await (const chunk of stream) {
-                    const content = chunk.choices[0]?.delta?.content || '';
-                    if (content) {
+                // Stream each statement with a small delay between them
+                for (let i = 0; i < statements.length; i++) {
+                    const statement = statements[i];
+
+                    // Stream characters for this statement
+                    for (const char of statement) {
                         controller.enqueue(encoder.encode(JSON.stringify({
                             type: 'content',
-                            content,
+                            content: char,
+                        }) + '\n'));
+                        // Small delay for streaming effect (simulated)
+                    }
+
+                    // Add paragraph break between statements
+                    if (i < statements.length - 1) {
+                        controller.enqueue(encoder.encode(JSON.stringify({
+                            type: 'content',
+                            content: '\n\n',
                         }) + '\n'));
                     }
                 }

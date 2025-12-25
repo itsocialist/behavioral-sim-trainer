@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { type SimulationConfig } from './PackSelector';
 import ContextDisplay from './ContextDisplay';
 import SimulationMeters from './SimulationMeters';
+import BehaviorStrip from './BehaviorStrip';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -82,6 +83,7 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
     const [distance, setDistance] = useState(config.scenarioPack.initialDistance);
     const [temperature, setTemperature] = useState(config.scenarioPack.initialTemperature);
     const [officerTone, setOfficerTone] = useState(5); // Start neutral
+    const [behaviorDescription, setBehaviorDescription] = useState('');
     const [sessionId] = useState(`session-${Date.now()}`);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -184,6 +186,10 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
                                 if (data.distanceChange) {
                                     setDistance(d => Math.max(1, Math.min(10, d + data.distanceChange)));
                                 }
+                                // Update behavior description
+                                if (data.behavior) {
+                                    setBehaviorDescription(data.behavior);
+                                }
                             } else if (data.type === 'content') {
                                 fullContent += data.content;
                                 setStreamingContent(fullContent);
@@ -220,6 +226,13 @@ export default function SimulationChat({ config, onEndSession }: SimulationChatP
         <div className="flex flex-col h-screen" style={{ background: 'var(--bg-primary)' }}>
             {/* Context Display */}
             <ContextDisplay config={config} />
+
+            {/* Behavior Status Strip */}
+            <BehaviorStrip
+                config={config}
+                behaviorDescription={behaviorDescription}
+                isLoading={isLoading}
+            />
 
             {/* Header with meters */}
             <div
