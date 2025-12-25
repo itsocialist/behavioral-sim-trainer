@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* Iron Bank Design System */
+:root {
+  /* Colors */
+  --bg-primary: #000000;
+  --bg-secondary: #0d0d0d;
+  --bg-card: #111111;
+  --bg-input: #1a1a1a;
+  
+  --accent-primary: #3FD497;
+  --accent-hover: #5ae3ab;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+  
+  --border-color: #2a2a2a;
+  --border-accent: #3FD497;
+  
+  /* Typography */
+  --font-main: 'Space Grotesk', 'Avenir', 'Montserrat', sans-serif;
+  
+  /* No rounded corners - Iron Bank uses sharp edges */
+  --radius: 0px;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Button Styles */
+.btn-primary {
+  background: var(--accent-primary);
+  color: #000000;
+  font-weight: 600;
+  border: none;
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-primary:disabled {
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.btn-secondary:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* Card Styles */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+/* Input Styles */
+.input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+.input:focus {
+  border-color: var(--accent-primary);
+  outline: none;
+}
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Select Styles */
+select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+select:focus {
+  border-color: var(--accent-primary);
+  outline: none;
+}
+
+/* Label/Badge Styles */
+.label-accent {
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+/* Message Bubbles */
+.msg-user {
+  background: var(--accent-primary);
+  color: #000000;
+}
+.msg-assistant {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Score Colors */
+.score-good { color: var(--accent-primary); }
+.score-mid { color: #f59e0b; }
+.score-low { color: #ef4444; }
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
